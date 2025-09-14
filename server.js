@@ -1,10 +1,27 @@
 import { ApolloServer } from "apollo-server-express";
 import { resolvers, typeDefs } from "./graphql/schema.js";
-import { db } from './database/connection.js';
 import express from 'express';
+import jwt from 'jsonwebtoken';
 
 const app = express();
-const server = new ApolloServer({ typeDefs: typeDefs, resolvers: resolvers });
+const server = new ApolloServer({
+    typeDefs: typeDefs,
+    resolvers: resolvers,
+    context: (req, res) => {
+        // check whether the endpoint is of refresh token 
+        // then bypass the token validation
+        // Need to do
+
+        const token = req.headers?.['Authorization']?.split(' ')?.[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        if (!decoded?.id) {
+            throw new Error('Not authorized');
+        }
+        return {
+            id: decoded.id
+        }
+    }
+});
 
 const startServer = async () => {
     await server.start();
